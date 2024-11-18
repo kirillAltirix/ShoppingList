@@ -1,0 +1,4 @@
+env: "dev"
+db:
+  host: "db"
+  port: 5432
