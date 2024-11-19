@@ -7,8 +7,9 @@ type Item struct {
 }
 
 type List struct {
-	ID     int
-	Key    string
-	Status string
-	Items  []Item
+	ID      int
+	Key     string
+	Status  string
+	OwnerID int
+	Items   []Item
 }

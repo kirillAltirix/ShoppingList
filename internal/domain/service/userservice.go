@@ -7,7 +7,7 @@ import (
 
 type UserStorage interface {
 	Create(ctx context.Context, user entity.User) (int, error)
-	GetByChatID(ctx context.Context) (entity.User, error)
+	GetByChatID(ctx context.Context, chatID string) (entity.User, error)
 }
 
 type userService struct {
