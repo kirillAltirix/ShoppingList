@@ -8,7 +8,8 @@ import (
 type ListStorage interface {
 	Create(ctx context.Context, owner entity.User, list entity.List) (entity.List, error)
 	GetByID(ctx context.Context, id int) (entity.List, error)
-	GetAll(ctx context.Context) ([]entity.List, error)
+	GetByKey(ctx context.Context, key string) (entity.List, error)
+	GetByUserID(ctx context.Context, id int) ([]entity.List, error)
 	UpdateList(ctx context.Context, list entity.List) error
 	UpdateItem(ctx context.Context, item entity.Item) error
 	AddSubowner(ctx context.Context, subowner entity.User, list entity.List) error

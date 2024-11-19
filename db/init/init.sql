@@ -12,11 +12,18 @@ CREATE TABLE lists
     status TEXT NOT NULL
 );
 
-CREATE TABLE users_lists
+CREATE TABLE lists_owners
 (
-    user_id INTEGER NOT NULL,
     list_id INTEGER NOT NULL,
-    ownership TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users (user_id),
+    FOREIGN KEY (list_id) REFERENCES lists (list_id)
+);
+
+CREATE TABLE lists_subowners
+(
+    list_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (user_id),
     FOREIGN KEY (list_id) REFERENCES lists (list_id)
 );

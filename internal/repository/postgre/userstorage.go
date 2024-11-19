@@ -24,11 +24,11 @@ func (s *postgreUserStorage) Create(ctx context.Context, user entity.User) (int,
 	return id, err
 }
 
-func (s *postgreUserStorage) GetByChatID(ctx context.Context, chat_id string) (entity.User, error) {
+func (s *postgreUserStorage) GetByChatID(ctx context.Context, chatID string) (entity.User, error) {
 	q := "SELECT * FROM users WHERE chat_id = $1"
 
 	user := repository.User{}
-	err := s.db.QueryRowContext(ctx, q, chat_id).Scan(&user.UserID, &user.ChatID, &user.Username)
+	err := s.db.QueryRowContext(ctx, q, chatID).Scan(&user.UserID, &user.ChatID, &user.Username)
 	if err != nil {
 		return entity.User{}, err
 	}
