@@ -6,7 +6,7 @@ type ShoppingListItemResponse struct {
 	Status string `json:"status"`
 }
 
-type shoppingListRespose struct {
+type ShoppingListRespose struct {
 	Key    string                     `json:"key"`
 	Status string                     `json:"status"`
 	Items  []ShoppingListItemResponse `json:"items"`
@@ -24,17 +24,17 @@ type CreateListRequest struct {
 	Items []string `json:"items"`
 }
 
-type CreateListResponse shoppingListRespose
+type CreateListResponse ShoppingListRespose
 
 type GetListRequest struct {
 }
 
-type GetListResponse shoppingListRespose
+type GetListResponse ShoppingListRespose
 
 type GetListsRequest struct {
 }
 
-type GetListsRespose []shoppingListRespose
+type GetListsRespose []ShoppingListRespose
 
 type DeleteListRequest struct {
 }
@@ -51,4 +51,4 @@ type CloseListResponse struct {
 type UpdateListItemStatusRequest struct {
 }
 
-type UpdateListItemStatusResponse shoppingListRespose
+type UpdateListItemStatusResponse ShoppingListRespose

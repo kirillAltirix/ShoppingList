@@ -2,10 +2,12 @@ package httpv1
 
 import (
 	"ShoppingList/internal/api"
+	"ShoppingList/internal/api/converter"
 	"ShoppingList/internal/domain/entity"
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -13,6 +15,11 @@ import (
 type ShoppingList interface {
 	CreateUser(ctx context.Context, user entity.User) error
 	CreateList(ctx context.Context, user entity.User, list entity.List) (entity.List, error)
+	GetList(ctx context.Context, user entity.User, list entity.List) (entity.List, error)
+	GetLists(ctx context.Context, user entity.User) ([]entity.List, error)
+	DeleteList(ctx context.Context, user entity.User, list entity.List) error
+	CloseList(ctx context.Context, user entity.User, list entity.List) error
+	UpdateListItemStatus(ctx context.Context, user entity.User, list entity.List, item entity.Item) (entity.List, error)
 }
 
 type httpService struct {
@@ -71,23 +78,13 @@ func (h *httpService) CreateList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	resList, err := h.shoppingList.CreateList(r.Context(), user, modelList)
+	list, err := h.shoppingList.CreateList(r.Context(), user, modelList)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	res := api.CreateListResponse{
-		Key:    resList.Key,
-		Status: resList.Status,
-	}
-	for _, item := range resList.Items {
-		res.Items = append(res.Items, api.ShoppingListItemResponse{
-			ID:     item.ID,
-			Name:   item.Name,
-			Status: item.Status,
-		})
-	}
+	res := converter.EntityListToCreateListResponse(list)
 
 	e := json.NewEncoder(w)
 	if err := e.Encode(res); err != nil {
@@ -100,35 +97,130 @@ func (h *httpService) CreateList(w http.ResponseWriter, r *http.Request) {
 
 func (h *httpService) GetList(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	_ = vars["chat_id"]
-	_ = vars["key"]
+	chatID := vars["chat_id"]
+	key := vars["key"]
+
+	user := entity.User{
+		ChatID: chatID,
+	}
+	list := entity.List{
+		Key: key,
+	}
+
+	list, err := h.shoppingList.GetList(r.Context(), user, list)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	res := converter.EntityListToGetListResponse(list)
+
+	e := json.NewEncoder(w)
+	if err := e.Encode(res); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *httpService) GetLists(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	_ = vars["chat_id"]
+	chatID := vars["chat_id"]
+
+	user := entity.User{
+		ChatID: chatID,
+	}
+
+	lists, err := h.shoppingList.GetLists(r.Context(), user)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	res := converter.EntityListsToGetListsRespose(lists)
+
+	e := json.NewEncoder(w)
+	if err := e.Encode(res); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *httpService) DeleteList(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	_ = vars["chat_id"]
-	_ = vars["key"]
+	chatID := vars["chat_id"]
+	key := vars["key"]
+
+	user := entity.User{
+		ChatID: chatID,
+	}
+	list := entity.List{
+		Key: key,
+	}
+
+	err := h.shoppingList.DeleteList(r.Context(), user, list)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *httpService) CloseList(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	_ = vars["chat_id"]
-	_ = vars["key"]
+	chatID := vars["chat_id"]
+	key := vars["key"]
+
+	user := entity.User{
+		ChatID: chatID,
+	}
+	list := entity.List{
+		Key: key,
+	}
+
+	err := h.shoppingList.CloseList(r.Context(), user, list)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *httpService) UpdateListItemStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	_ = vars["chat_id"]
-	_ = vars["key"]
-	_ = vars["item_id"]
+	chatID := vars["chat_id"]
+	key := vars["key"]
+	itemIDStr := vars["item_id"]
+	itemID, _ := strconv.Atoi(itemIDStr)
+
+	user := entity.User{
+		ChatID: chatID,
+	}
+	list := entity.List{
+		Key: key,
+	}
+	item := entity.Item{
+		ID: itemID,
+	}
+
+	list, err := h.shoppingList.UpdateListItemStatus(r.Context(), user, list, item)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	res := converter.EntityListToUpdateListItemStatusResponse(list)
+
+	e := json.NewEncoder(w)
+	if err := e.Encode(res); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }

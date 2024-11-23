@@ -17,3 +17,8 @@ type userService struct {
 func NewUserService(storage UserStorage) *userService {
 	return &userService{storage}
 }
+
+func (s *userService) CreateUser(ctx context.Context, user entity.User) error {
+	_, err := s.storage.Create(ctx, user)
+	return err
+}
