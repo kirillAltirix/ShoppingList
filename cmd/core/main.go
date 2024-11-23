@@ -1,17 +1,21 @@
 package main
 
 import (
+	"ShoppingList/internal/api/httpv1"
 	"ShoppingList/internal/config"
 	"ShoppingList/internal/logger"
-	"ShoppingList/internal/storage"
+	"ShoppingList/internal/repository/postgre"
 	"context"
 	"flag"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -31,15 +35,29 @@ func main() {
 	slog.Info("successfully loaded config and logger")
 	slog.Debug("debug mode enabled")
 
-	db, err := storage.New(ctx, cfg)
+	db, err := postgre.NewPostgreConnection(ctx, cfg)
 	if err != nil {
 		log.Fatalf("Failed to create storage: %v", err.Error())
 	}
 	defer db.Close()
 
+	r := mux.NewRouter()
+	s := httpv1.Build(db)
+	s.Register(r)
+	srv := &http.Server{
+		Handler: r,
+		Addr:    cfg.Address,
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
 	done := make(chan struct{})
 	go func() {
-		// do some work
+		err := srv.ListenAndServe()
+		if err != nil {
+			slog.Error("error from http server", slog.String("error message", err.Error()))
+		}
 		close(done)
 	}()
 

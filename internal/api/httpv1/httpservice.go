@@ -12,8 +12,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type ShoppingList interface {
+type UserService interface {
 	CreateUser(ctx context.Context, user entity.User) error
+}
+
+type ListService interface {
 	CreateList(ctx context.Context, user entity.User, list entity.List) (entity.List, error)
 	GetList(ctx context.Context, user entity.User, list entity.List) (entity.List, error)
 	GetLists(ctx context.Context, user entity.User) ([]entity.List, error)
@@ -23,11 +26,12 @@ type ShoppingList interface {
 }
 
 type httpService struct {
-	shoppingList ShoppingList
+	UserService UserService
+	ListService ListService
 }
 
-func NewService(shoppingList ShoppingList) *httpService {
-	return &httpService{shoppingList}
+func NewService() *httpService {
+	return &httpService{}
 }
 
 func (h *httpService) Register(router *mux.Router) {
@@ -38,6 +42,7 @@ func (h *httpService) Register(router *mux.Router) {
 	router.HandleFunc("/user/{chat_id}/list/{key}", h.DeleteList).Methods("DELETE")
 	router.HandleFunc("/user/{chat_id}/list/{key}", h.CloseList).Methods("PUT")
 	router.HandleFunc("/user/{chat_id}/list/{key}/items/{item_id}", h.UpdateListItemStatus).Methods("PUT")
+	router.HandleFunc("/healthcheck", h.Healthcheck).Methods("GET")
 }
 
 func (h *httpService) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +56,7 @@ func (h *httpService) CreateUser(w http.ResponseWriter, r *http.Request) {
 		ChatID:   req.ChatID,
 		Username: req.Username,
 	}
-	if err := h.shoppingList.CreateUser(r.Context(), user); err != nil {
+	if err := h.UserService.CreateUser(r.Context(), user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -78,7 +83,7 @@ func (h *httpService) CreateList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	list, err := h.shoppingList.CreateList(r.Context(), user, modelList)
+	list, err := h.ListService.CreateList(r.Context(), user, modelList)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -107,7 +112,7 @@ func (h *httpService) GetList(w http.ResponseWriter, r *http.Request) {
 		Key: key,
 	}
 
-	list, err := h.shoppingList.GetList(r.Context(), user, list)
+	list, err := h.ListService.GetList(r.Context(), user, list)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -132,7 +137,7 @@ func (h *httpService) GetLists(w http.ResponseWriter, r *http.Request) {
 		ChatID: chatID,
 	}
 
-	lists, err := h.shoppingList.GetLists(r.Context(), user)
+	lists, err := h.ListService.GetLists(r.Context(), user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -161,7 +166,7 @@ func (h *httpService) DeleteList(w http.ResponseWriter, r *http.Request) {
 		Key: key,
 	}
 
-	err := h.shoppingList.DeleteList(r.Context(), user, list)
+	err := h.ListService.DeleteList(r.Context(), user, list)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -182,7 +187,7 @@ func (h *httpService) CloseList(w http.ResponseWriter, r *http.Request) {
 		Key: key,
 	}
 
-	err := h.shoppingList.CloseList(r.Context(), user, list)
+	err := h.ListService.CloseList(r.Context(), user, list)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -208,7 +213,7 @@ func (h *httpService) UpdateListItemStatus(w http.ResponseWriter, r *http.Reques
 		ID: itemID,
 	}
 
-	list, err := h.shoppingList.UpdateListItemStatus(r.Context(), user, list, item)
+	list, err := h.ListService.UpdateListItemStatus(r.Context(), user, list, item)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -222,5 +227,9 @@ func (h *httpService) UpdateListItemStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *httpService) Healthcheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }

@@ -25,9 +25,14 @@ type Secrets struct {
 	DBPassword string
 }
 
+type Service struct {
+	Address string `yaml:"address"`
+}
+
 type Config struct {
 	Env      string `yaml:"env"`
 	DBConfig `yaml:"db"`
+	Service  `yaml:"service"`
 	Secrets
 }
 
