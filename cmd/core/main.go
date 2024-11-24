@@ -6,6 +6,7 @@ import (
 	"ShoppingList/internal/logger"
 	"ShoppingList/internal/repository/postgre"
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"log/slog"
@@ -41,7 +42,7 @@ func main() {
 	}
 	defer db.Close()
 
-	r := mux.NewRouter()
+	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	s := httpv1.Build(db)
 	s.Register(r)
 	srv := &http.Server{
@@ -55,7 +56,7 @@ func main() {
 	done := make(chan struct{})
 	go func() {
 		err := srv.ListenAndServe()
-		if err != nil {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("error from http server", slog.String("error message", err.Error()))
 		}
 		close(done)
@@ -65,6 +66,9 @@ func main() {
 	case <-stop:
 		slog.Info("external signal to stop tradesloader service", slog.Duration("shutdown timeout", 15*time.Second))
 		cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			slog.Error("failed to shutdown server")
+		}
 		select {
 		case <-done:
 			slog.Info("graceful shutdown done")

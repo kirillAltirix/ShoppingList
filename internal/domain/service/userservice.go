@@ -3,6 +3,7 @@ package service
 import (
 	"ShoppingList/internal/domain/entity"
 	"context"
+	"log/slog"
 )
 
 type UserStorage interface {
@@ -21,4 +22,12 @@ func NewUserService(storage UserStorage) *userService {
 func (s *userService) CreateUser(ctx context.Context, user entity.User) error {
 	_, err := s.storage.Create(ctx, user)
 	return err
+}
+
+func (s *userService) GetUserByChatID(ctx context.Context, user entity.User) (entity.User, error) {
+	user, err := s.storage.GetByChatID(ctx, user.ChatID)
+
+	slog.Debug("GetUserByChatID", slog.Group("user", slog.Int("id", user.ID), slog.String("chat_id", user.ChatID)))
+
+	return user, err
 }

@@ -11,9 +11,9 @@ import (
 
 func NewPostgreConnection(ctx context.Context, cfg config.Config) (*sql.DB, error) {
 	db, err := sql.Open(
-		"pq",
+		"postgres",
 		fmt.Sprintf(
-			"postgres://%v:%v@%v:%v/%v",
+			"postgres://%v:%v@%v:%v/%v?sslmode=disable",
 			cfg.DBUser,
 			cfg.DBPassword,
 			cfg.Host,

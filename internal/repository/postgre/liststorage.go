@@ -39,7 +39,7 @@ func (s *postgreListStorage) Create(ctx context.Context, owner entity.User, list
 		return list, err
 	}
 
-	if _, err = tx.ExecContext(ctx, q2, owner.ID, listID); err != nil {
+	if _, err = tx.ExecContext(ctx, q2, listID, owner.ID); err != nil {
 		return list, err
 	}
 
@@ -122,34 +122,34 @@ func (s *postgreListStorage) GetByKey(ctx context.Context, key string) (entity.L
 }
 
 func (s *postgreListStorage) GetByUserID(ctx context.Context, id int) ([]entity.List, error) {
-	q1 := "SELECT list_id FROM lists JOIN lists_owners ON lists.list_id = lists_owners.list_id WHERE lists_owners.user_id = $1"
-	q2 := "SELECT list_id FROM lists JOIN lists_subowners ON lists.list_id = lists_subowners.list_id WHERE lists_subowners.user_id = $1"
+	q1 := "SELECT lists.list_id FROM lists JOIN lists_owners ON lists.list_id = lists_owners.list_id WHERE lists_owners.user_id = $1"
+	q2 := "SELECT lists.list_id FROM lists JOIN lists_subowners ON lists.list_id = lists_subowners.list_id WHERE lists_subowners.user_id = $1"
 
 	listIDs := []int{}
-	rows, err := s.db.QueryContext(ctx, q1)
+	rows, err := s.db.QueryContext(ctx, q1, id)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var listID int
 		if err := rows.Scan(&listID); err != nil {
-			return nil, nil
+			return nil, err
 		}
 		listIDs = append(listIDs, listID)
 	}
 
-	rows2, err := s.db.QueryContext(ctx, q2)
+	rows2, err := s.db.QueryContext(ctx, q2, id)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	defer rows2.Close()
 
 	for rows2.Next() {
 		var listID int
 		if err := rows2.Scan(&listID); err != nil {
-			return nil, nil
+			return nil, err
 		}
 		listIDs = append(listIDs, listID)
 	}
@@ -158,7 +158,7 @@ func (s *postgreListStorage) GetByUserID(ctx context.Context, id int) ([]entity.
 
 	for _, listID := range listIDs {
 		if list, err := s.GetByID(ctx, listID); err != nil {
-			return nil, nil
+			return nil, err
 		} else {
 			modelList = append(modelList, list)
 		}
@@ -176,7 +176,7 @@ func (s *postgreListStorage) UpdateList(ctx context.Context, list entity.List) e
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, q, list.Key, list.Status)
+	_, err = tx.ExecContext(ctx, q, list.Key, list.Status, list.ID)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func (s *postgreListStorage) UpdateList(ctx context.Context, list entity.List) e
 func (s *postgreListStorage) UpdateItem(ctx context.Context, item entity.Item) error {
 	q := "UPDATE items SET name = $1, status = $2 WHERE item_id = $3"
 
-	_, err := s.db.ExecContext(ctx, q, item.Name, item.Status)
+	_, err := s.db.ExecContext(ctx, q, item.Name, item.Status, item.ID)
 
 	return err
 }
@@ -210,7 +210,7 @@ func (s *postgreListStorage) AddSubowner(ctx context.Context, subowner entity.Us
 }
 
 func (s *postgreListStorage) getItemsByListID(ctx context.Context, listID int) ([]entity.Item, error) {
-	q := "SELECT items.item_id, items.name, items.status FORM items JOIN lists_items ON items.item_id = lists_items.item_id WHERE lists_items.list_id = $1"
+	q := "SELECT items.item_id, items.name, items.status FROM items JOIN lists_items ON items.item_id = lists_items.item_id WHERE lists_items.list_id = $1"
 
 	rows, err := s.db.QueryContext(ctx, q, listID)
 	if err != nil {
